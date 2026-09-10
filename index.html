@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Nice — your places</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,Arial,sans-serif;color:#162c32;background:#f7f7f4}body{min-height:100vh;min-height:100dvh}main{display:flex;flex-direction:column}#map-wrap{position:relative;width:100%;height:68vh;min-height:430px}#map{height:100%;width:100%;background:#dce7e8}aside{padding:16px;background:#f7f7f4;border-top:1px solid #d9e0e0}button,select,input{font:inherit}button{cursor:pointer;min-height:44px;background:white;color:#162c32;border:1px solid #c4d1d3;border-radius:8px;padding:8px 12px}button:hover{background:#edf5f6}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #16829a;outline-offset:2px}button[aria-pressed=true]{background:#126e82;color:#fff}button:disabled{opacity:.5;cursor:default}label{display:block;font-size:13px;font-weight:600;margin:8px 0 5px}select,input{width:100%;padding:10px;border:1px solid #b9c9ca;border-radius:7px;background:white;font-size:16px}.tools{position:absolute;right:10px;top:10px;z-index:800;display:flex;flex-direction:column;gap:7px;align-items:flex-end}.tools button{box-shadow:0 2px 8px #0002;font-size:13px}.tools .location{background:#126e82;color:white;font-weight:650}.pin{border:2px solid white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 2px 5px #0005;position:relative}.pin.mosque{width:40px;height:40px;background:#7041a2;color:#fff}.mosque-img{position:absolute;inset:7px;width:23px;height:23px;filter:brightness(0) invert(1)}.mosque-fallback{font-size:23px;line-height:1}.mosque-img:not([hidden])~.mosque-fallback{visibility:hidden}.women-badge{position:absolute;right:-5px;bottom:-5px;background:#fff;color:#5e288e;border:1px solid #7041a2;font-size:14px;font-weight:bold;border-radius:50%;width:20px;height:20px;text-align:center;line-height:18px}#list{display:grid;gap:7px;margin-top:10px}.place{text-align:left;padding:10px}.place strong{font-size:14px;display:block}.place span{font-size:12px;color:#51676d;display:block;margin-top:4px}.popup{font-size:14px;line-height:1.5;max-width:285px}.popup h2{font-size:17px;margin:0 0 8px}.popup p{margin:8px 0}.popup a{display:block;margin-top:8px;color:#06677e;font-weight:600}.facility{background:#f0e9f7;color:#582c7c;padding:8px;border-radius:6px}.notice{padding:10px;background:#fff4d7;border-radius:7px;font-size:12px;line-height:1.5}#count{font-size:12px;color:#51676d;margin:10px 0}.footnote{font-size:11px;line-height:1.5;color:#51676d}#status{position:absolute;bottom:38px;left:10px;right:10px;z-index:850;background:#fff;padding:10px 12px;border:1px solid #b8ced4;border-radius:8px;font-size:13px;box-shadow:0 2px 8px #0002;display:none;max-width:510px}#status.visible{display:block}footer{font-size:11px;padding:7px 10px;background:white;color:#51676d}#error{padding:110px 20px 20px;font-size:14px}.leaflet-popup-content{max-height:45vh;overflow:auto}.leaflet-control-zoom a{min-width:38px;min-height:38px;line-height:38px}.gps-dot{width:18px;height:18px;border:3px solid white;border-radius:50%;background:#168af2;box-shadow:0 0 0 3px #168af244,0 1px 6px #0005}
+@media(min-width:850px){aside{padding:18px 8%}#list{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:700px){#map-wrap{height:62vh;min-height:390px}aside{padding:12px}#list{grid-template-columns:repeat(2,minmax(0,1fr))}.tools{right:8px;top:8px}.tools button{font-size:12px;padding:8px 10px}footer{font-size:10px}.leaflet-popup-content{max-width:230px}#status{bottom:38px}}
+</style></head><body><main><section id="map-wrap" aria-label="Interactive Nice map"><div id="map"><div id="error">Loading map… An internet connection is needed. If the map stays blank, use the Google Maps links below.</div></div><div class="tools"><button type="button" id="locate" class="location" aria-pressed="false">◎ My location</button><button type="button" id="recenter" hidden>Recenter on me</button></div><div id="status" role="status" aria-live="polite"></div></section><aside id="places-panel"><p class="notice">Your car: <strong>18 chemin du Vallon de Barla</strong>.<br>Purple mosque pins with ♀ have published women’s rooms. The unconfirmed Al-Wahda pin is hidden by default.</p><label for="search">Find a place</label><input id="search" type="search" placeholder="Park, mosque, old town…"><label for="category">Show places</label><select id="category"><option value="active">Places & transport</option><option value="Mosque">Mosques — women’s rooms listed</option><option value="all">All pins, including unconfirmed & old</option></select><p id="count" aria-live="polite"></p><div id="list"></div><p class="footnote">Durations and best times are planning suggestions. This is a collection of options, not a single walking route. Park pins can mark the grounds rather than entrances. Confirm current openings before a detour.</p><p class="footnote">Women’s facilities were checked against published listings on 10 September 2026; availability at a particular prayer is not an on-site guarantee. Each mosque pin links its evidence.</p><p class="footnote">Location starts only after you tap “My location”. Stop it with “Stop GPS”. This page does not save or upload your coordinates.</p><p class="footnote">Map data © OpenStreetMap contributors. Mosque icon: Font Awesome Free (CC BY 4.0).</p></aside></main><footer>Tap pins for details · Internet required</footer><script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script><script>
+const points=[
+  {
+    "name": "Your car — Vallon de Barla",
+    "category": "Parking",
+    "address": "18 Chemin du Vallon de Barla, 06200 Nice",
+    "description": "Your actual parking spot, reported free by you on 10 September 2026. Pin marks the street address, not the exact bay. No P+R validation requirement here.",
+    "bestTime": "Any time",
+    "status": "Current parking",
+    "icon": "🅿️",
+    "lat": 43.6845277,
+    "lon": 7.230851,
+    "maps": "https://www.google.com/maps/place/18+Chem.+du+Vallon+de+Barla,+06200+Nice/@43.6845277,7.230851,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdd0505090e291:0x7d3ac9811cdaceff!8m2!3d43.6845277!4d7.230851!16s%2Fg%2F11csdj8q8d?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/18+Chem.+du+Vallon+de+Barla,+06200+Nice/@43.6845277,7.230851,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdd0505090e291:0x7d3ac9811cdaceff!8m2!3d43.6845277!4d7.230851!16s%2Fg%2F11csdj8q8d?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Sainte-Hélène — tram L2/L3",
+    "category": "Transport",
+    "address": "Avenue de la Californie, 06200 Nice",
+    "description": "Tram access for your parking. Google walking route: about 400 m / 5 min, with a restricted-access warning; allow extra time if that passage is closed. Take a service towards Port Lympia for central Nice.",
+    "bestTime": "Start / return",
+    "status": "Transport",
+    "icon": "🚋",
+    "lat": 43.6835297,
+    "lon": 7.233608,
+    "maps": "https://www.google.com/maps/place/Sainte-H%C3%A9l%C3%A8ne/@43.6835297,7.2291019,17z/data=!4m10!1m2!2m1!1sSainte+H%C3%A9l%C3%A8ne+arr%C3%AAt+tramway+Nice!3m6!1s0x12cdd05a64b597b1:0xcfd893b6cbd74cee!8m2!3d43.6835297!4d7.233608!15sCiNTYWludGUgSMOpbMOobmUgYXJyw6p0IHRyYW13YXkgTmljZZIBCXRyYW1fc3RvcOABAA!16s%2Fg%2F11frtg4zdv?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Sainte-H%C3%A9l%C3%A8ne/@43.6835297,7.2291019,17z/data=!4m10!1m2!2m1!1sSainte+H%C3%A9l%C3%A8ne+arr%C3%AAt+tramway+Nice!3m6!1s0x12cdd05a64b597b1:0xcfd893b6cbd74cee!8m2!3d43.6835297!4d7.233608!15sCiNTYWludGUgSMOpbMOobmUgYXJyw6p0IHRyYW13YXkgTmljZZIBCXRyYW1fc3RvcOABAA!16s%2Fg%2F11frtg4zdv?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Al-Wahda / Mosquée de la Gare",
+    "category": "Mosque — women unconfirmed",
+    "address": "4 rue de la Reine Jeanne, 06000 Nice",
+    "description": "Current Al-Wahda address, but women’s prayer-room access here remains unconfirmed. Hidden from the default map and women’s-room mosque filter. Do not rely on women’s-room information for its closed former address. Use one of the four mosques with published women’s facilities instead. Check the linked Mawaqit board for current prayer times.",
+    "bestTime": "Dhuhr or Asr",
+    "status": "Women’s room unconfirmed",
+    "icon": "🕌",
+    "lat": 43.7060925,
+    "lon": 7.2636024,
+    "maps": "https://www.google.com/maps/place/Mosqu%C3%A9e+Al-Wahda+(L%E2%80%99union)/@43.7060925,7.2636024,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdd1a67a193817:0x8a253c246b91c9b0!8m2!3d43.7060925!4d7.2636024!16s%2Fg%2F11j370zxfx?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://mawaqit.net/en/lunion-nice"
+  },
+  {
+    "name": "Place Masséna",
+    "category": "History",
+    "address": "Place Masséna, 06000 Nice",
+    "description": "Central square connecting the modern centre, Old Nice and the seafront. A useful meeting and orientation point. Allow 15–20 min; cross the exposed square rather than lingering in strong midday sun.",
+    "bestTime": "Morning / late afternoon",
+    "status": "Visit",
+    "icon": "🏛️",
+    "lat": 43.697205,
+    "lon": 7.2705956,
+    "maps": "https://www.google.com/maps/place/Pl.+Massena,+Nice/@43.697205,7.2705956,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa161703019:0x4069c261780c67c!8m2!3d43.697205!4d7.2705956!16s%2Fg%2F1tf91x9p?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Pl.+Massena,+Nice/@43.697205,7.2705956,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa161703019:0x4069c261780c67c!8m2!3d43.697205!4d7.2705956!16s%2Fg%2F1tf91x9p?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Promenade du Paillon",
+    "category": "Nature",
+    "address": "Promenade du Paillon, Nice",
+    "description": "Central green corridor for a gentle walk and a seated break. Choose tree shade; lawns and open fountain areas can still be exposed. Allow 20–40 min.",
+    "bestTime": "Rest stop / between visits",
+    "status": "Visit",
+    "icon": "🌳",
+    "lat": 43.6974406,
+    "lon": 7.2714633,
+    "maps": "https://www.google.com/maps/place/Promenade+du+Paillon/@43.6974406,7.2714633,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa3e60b80b7:0xd490d0c0e490c5eb!8m2!3d43.6974406!4d7.2714633!16s%2Fg%2F1yfp3lbth?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Promenade+du+Paillon/@43.6974406,7.2714633,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa3e60b80b7:0xd490d0c0e490c5eb!8m2!3d43.6974406!4d7.2714633!16s%2Fg%2F1yfp3lbth?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Vieux Nice — Place Rossetti & Sainte-Réparate",
+    "category": "History",
+    "address": "Place Rossetti, 06300 Nice",
+    "description": "Old-town lanes and the cathedral square. Explore the historic streets at an easy pace, with a short cathedral visit when open. Allow 60–90 min for the neighbourhood; indoor access is subject to worship.",
+    "bestTime": "Late morning / late afternoon",
+    "status": "Visit",
+    "icon": "🏛️",
+    "lat": 43.697164,
+    "lon": 7.2760274,
+    "maps": "https://www.google.com/maps/place/Cath%C3%A9drale+Sainte-R%C3%A9parate+de+Nice/@43.697164,7.2760274,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddabcb1937547:0x3a589fb4fa95cdd1!8m2!3d43.697164!4d7.2760274!16zL20vMGdzdGxx?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Cath%C3%A9drale+Sainte-R%C3%A9parate+de+Nice/@43.697164,7.2760274,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddabcb1937547:0x3a589fb4fa95cdd1!8m2!3d43.697164!4d7.2760274!16zL20vMGdzdGxx?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Cours Saleya",
+    "category": "History",
+    "address": "Cours Saleya, 06300 Nice",
+    "description": "Historic market street in Old Nice. Best earlier in the day for market atmosphere; surrounding lanes provide shade. Allow 20–30 min, longer if eating nearby. Purchases and meals extra.",
+    "bestTime": "Morning",
+    "status": "Visit",
+    "icon": "🏛️",
+    "lat": 43.695607,
+    "lon": 7.2749227,
+    "maps": "https://www.google.com/maps/place/Cr+Saleya,+06300+Nice/@43.695607,7.2749227,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa320b7663b:0xc17d02743fe180be!8m2!3d43.695607!4d7.2749227!16s%2Fg%2F122yh5fh?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Cr+Saleya,+06300+Nice/@43.695607,7.2749227,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa320b7663b:0xc17d02743fe180be!8m2!3d43.695607!4d7.2749227!16s%2Fg%2F122yh5fh?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Place Garibaldi",
+    "category": "History",
+    "address": "Place Garibaldi, 06300 Nice",
+    "description": "Historic arcaded square near the archaeological crypt and the port. Allow 15–25 min. Use the arcades for shade or shelter during a brief shower.",
+    "bestTime": "Before / after the crypt",
+    "status": "Visit",
+    "icon": "🏛️",
+    "lat": 43.7009404,
+    "lon": 7.2801004,
+    "maps": "https://www.google.com/maps/place/Pl.+Garibaldi,+06300+Nice/@43.7009404,7.2801004,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaba3883dbbf:0x7c3cde18da41331f!8m2!3d43.7009404!4d7.2801004!16s%2Fg%2F12214tpt?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Pl.+Garibaldi,+06300+Nice/@43.7009404,7.2801004,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaba3883dbbf:0x7c3cde18da41331f!8m2!3d43.7009404!4d7.2801004!16s%2Fg%2F12214tpt?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Castle Hill lift — lower entrance",
+    "category": "Transport",
+    "address": "Ascenseur du Château, rue des Ponchettes, Nice",
+    "description": "Lower entrance to the lift serving Castle Hill. Useful for reducing climbing and sun exposure. Allow queue time; check the operating hours and return arrangements on arrival.",
+    "bestTime": "Before Castle Hill",
+    "status": "Transport",
+    "icon": "🚋",
+    "lat": 43.6944383,
+    "lon": 7.2792209,
+    "maps": "https://www.google.com/maps/place/Ascenseur+du+Ch%C3%A2teau/@43.6944383,7.2792209,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddabda30cab51:0xe45c90a3355b2857!8m2!3d43.6944383!4d7.2792209!16s%2Fg%2F12m8_74wy?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Ascenseur+du+Ch%C3%A2teau/@43.6944383,7.2792209,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddabda30cab51:0xe45c90a3355b2857!8m2!3d43.6944383!4d7.2792209!16s%2Fg%2F12m8_74wy?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Colline du Château",
+    "category": "Nature",
+    "address": "Colline du Château, 06300 Nice",
+    "description": "Castle Hill park combines city and bay views, historic remains and the waterfall area. Allow 60–90 min with shaded pauses. No intact castle. Best in clear weather; the park closes in the evening. Published September park closing is 20:00: leave time to exit before sunset is over.",
+    "bestTime": "Late afternoon before closing",
+    "status": "Visit",
+    "icon": "🌳",
+    "lat": 43.6959352,
+    "lon": 7.2796601,
+    "maps": "https://www.google.com/maps/place/Colline+du+Ch%C3%A2teau/@43.6959352,7.275154,17z/data=!4m10!1m2!2m1!1sColline+du+Ch%C3%A2teau+Nice!3m6!1s0x12cdd0010552baf3:0xafa55439b0a50bee!8m2!3d43.6959352!4d7.2796601!15sChhDb2xsaW5lIGR1IENow6J0ZWF1IE5pY2VaGiIYY29sbGluZSBkdSBjaMOidGVhdSBuaWNlkgEEcGFya5oBI0NoWkRTVWhOTUc5blMwVkpRMEZuU1VSU2NGbEVTR0puRUFF4AEA-gEECAAQRg!16s%2Fg%2F122jqvn4?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Colline+du+Ch%C3%A2teau/@43.6959352,7.275154,17z/data=!4m10!1m2!2m1!1sColline+du+Ch%C3%A2teau+Nice!3m6!1s0x12cdd0010552baf3:0xafa55439b0a50bee!8m2!3d43.6959352!4d7.2796601!15sChhDb2xsaW5lIGR1IENow6J0ZWF1IE5pY2VaGiIYY29sbGluZSBkdSBjaMOidGVhdSBuaWNlkgEEcGFya5oBI0NoWkRTVWhOTUc5blMwVkpRMEZuU1VSU2NGbEVTR0puRUFF4AEA-gEECAAQRg!16s%2Fg%2F122jqvn4?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Rauba Capeù — sunset viewpoint",
+    "category": "Sunset",
+    "address": "Quai Rauba Capeu, 06300 Nice",
+    "description": "Seafront viewpoint looking west across the bay. Allow 30–45 min around sunset. Exposed to sun, wind and rain; check pedestrian access during Ironman restrictions.",
+    "bestTime": "Sunset",
+    "status": "Visit",
+    "icon": "🌅",
+    "lat": 43.6934961,
+    "lon": 7.2797857,
+    "maps": "https://www.google.com/maps/place/Quai+Rauba+Capeu,+06300+Nice/@43.6934961,7.2797857,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddabdec2b1075:0xc0f0ba4a3a53afd9!8m2!3d43.6934961!4d7.2797857!16s%2Fg%2F1thh4yrp?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Quai+Rauba+Capeu,+06300+Nice/@43.6934961,7.2797857,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddabdec2b1075:0xc0f0ba4a3a53afd9!8m2!3d43.6934961!4d7.2797857!16s%2Fg%2F1thh4yrp?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Port Lympia — harbour",
+    "category": "History",
+    "address": "Port Lympia, Nice",
+    "description": "Historic harbour area for a relaxed waterfront stroll and a rest. Allow 30–45 min. The pin identifies the harbour area; use the separate tram pin for the station.",
+    "bestTime": "Late afternoon / evening",
+    "status": "Visit",
+    "icon": "🏛️",
+    "lat": 43.6953903,
+    "lon": 7.2851385,
+    "maps": "https://www.google.com/maps/place/Port+Lympia/@43.6953897,7.2851385,15z/data=!3m1!4b1!4m6!3m5!1s0x12cddab8ca5ed2d1:0x35d6e3ec8c9f63cb!8m2!3d43.6953903!4d7.2851385!16s%2Fg%2F1ypmn1ljw?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Port+Lympia/@43.6953897,7.2851385,15z/data=!3m1!4b1!4m6!3m5!1s0x12cddab8ca5ed2d1:0x35d6e3ec8c9f63cb!8m2!3d43.6953903!4d7.2851385!16s%2Fg%2F1ypmn1ljw?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Musée de Préhistoire Terra Amata",
+    "category": "History",
+    "address": "25 boulevard Carnot, 06300 Nice",
+    "description": "Prehistory museum near the port, centred on evidence of early human occupation and fire. A useful indoor option for rain or strong sun. Allow 45–60 min. Check current admission and opening before visiting.",
+    "bestTime": "Rain / strongest sun",
+    "status": "Optional",
+    "icon": "🏛️",
+    "lat": 43.6977467,
+    "lon": 7.289304,
+    "maps": "https://www.google.com/maps/place/Mus%C3%A9e+de+Pr%C3%A9histoire+de+Terra+Amata/@43.6977467,7.289304,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddac73ebb2cbb:0x8b7f87ea6e5fa825!8m2!3d43.6977467!4d7.289304!16s%2Fg%2F122ds69t?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Mus%C3%A9e+de+Pr%C3%A9histoire+de+Terra+Amata/@43.6977467,7.289304,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddac73ebb2cbb:0x8b7f87ea6e5fa825!8m2!3d43.6977467!4d7.289304!16s%2Fg%2F122ds69t?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Arènes de Cimiez — olive grove",
+    "category": "Nature",
+    "address": "184 avenue des Arènes de Cimiez, 06000 Nice",
+    "description": "Olive-tree park beside the Roman amphitheatre and archaeology museum. A good place for a picnic or a seated break between visits. Allow 30–45 min; shade varies with the time of day.",
+    "bestTime": "Morning / rest stop",
+    "status": "Visit",
+    "icon": "🌳",
+    "lat": 43.7200065,
+    "lon": 7.2768964,
+    "maps": "https://www.google.com/maps/place/Jardin+des+Ar%C3%A8nes+de+Cimiez/@43.7200065,7.2768964,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdc54fc5acbe5f:0x6450ca05ee9dbdf8!8m2!3d43.7200065!4d7.2768964!16s%2Fg%2F120xp5_n?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Jardin+des+Ar%C3%A8nes+de+Cimiez/@43.7200065,7.2768964,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdc54fc5acbe5f:0x6450ca05ee9dbdf8!8m2!3d43.7200065!4d7.2768964!16s%2Fg%2F120xp5_n?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Jardin du Monastère de Cimiez",
+    "category": "Nature",
+    "address": "Place du Monastère de Cimiez, Nice",
+    "description": "Free monastery garden with planted terraces and views over Nice. Allow 30–45 min. Some paths are shaded, but the viewpoint and formal garden can be sunny.",
+    "bestTime": "Morning / late afternoon",
+    "status": "Visit",
+    "icon": "🌳",
+    "lat": 43.7188168,
+    "lon": 7.2783284,
+    "maps": "https://www.google.com/maps/place/Jardin+du+Monastere+de+Cimiez/@43.7188168,7.2738223,17z/data=!4m10!1m2!2m1!1sJardin+du+Monast%C3%A8re+de+Cimiez+Nice!3m6!1s0x12ca0e4fcbd8d4d3:0xca8eed38a493ddf4!8m2!3d43.7188168!4d7.2783284!15sCiNKYXJkaW4gZHUgTW9uYXN0w6hyZSBkZSBDaW1pZXogTmljZVolIiNqYXJkaW4gZHUgbW9uYXN0w6hyZSBkZSBjaW1pZXogbmljZZIBBHBhcmuaASBDaFJEU1VoTk1HOW5TMFZKUTBGblNVTmFjRGxDY2hBQuABAPoBBQi7AhBJ!16s%2Fg%2F11ckr4thhp?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.explorenicecotedazur.com/culture/jardin-du-monastere-de-cimiez/"
+  },
+  {
+    "name": "Cathédrale Saint-Nicolas",
+    "category": "History",
+    "address": "Avenue Nicolas II, 06000 Nice",
+    "description": "Russian Orthodox cathedral linked to Nice's historic Russian community. Allow 30–45 min. Check visitor hours and any paid guided visit separately; worship can affect access.",
+    "bestTime": "Opening hours / near Tzarewitch",
+    "status": "Optional",
+    "icon": "🏛️",
+    "lat": 43.7038984,
+    "lon": 7.253944,
+    "maps": "https://www.google.com/maps/place/Cath%C3%A9drale+Saint-Nicolas+de+Nice/@43.7038984,7.253944,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa07e9b019f:0x75af76bbbc1ab9e2!8m2!3d43.7038984!4d7.253944!16zL20vMGdodjhr?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Cath%C3%A9drale+Saint-Nicolas+de+Nice/@43.7038984,7.253944,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddaa07e9b019f:0x75af76bbbc1ab9e2!8m2!3d43.7038984!4d7.253944!16zL20vMGdodjhr?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Parc forestier du Mont Boron",
+    "category": "Nature",
+    "address": "Parc du Mont Boron, Nice",
+    "description": "Mediterranean woodland with walking paths and coastal views. Choose a short 45–90 min loop to preserve your daily walking budget. Avoid exposed viewpoints in the strongest sun and trails during thunderstorms.",
+    "bestTime": "Cooler afternoon / clear weather",
+    "status": "Optional",
+    "icon": "🌳",
+    "lat": 43.698289,
+    "lon": 7.2992268,
+    "maps": "https://www.google.com/maps/place/Parc+du+Mont+Boron/@43.698289,7.2992268,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddadc688f6637:0x411506bd1d2f8c1!8m2!3d43.698289!4d7.2992268!16s%2Fg%2F1tf1l0nb?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Parc+du+Mont+Boron/@43.698289,7.2992268,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddadc688f6637:0x411506bd1d2f8c1!8m2!3d43.698289!4d7.2992268!16s%2Fg%2F1tf1l0nb?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Fort du Mont-Alban — exterior viewpoint",
+    "category": "History",
+    "address": "Chemin du Fort du Mont-Alban, Nice",
+    "description": "Sixteenth-century Savoyard fort with views towards Nice and Villefranche. Plan 20–30 min outside. The tourist office says interior visits are suspended; do not plan a paid interior tour.",
+    "bestTime": "Clear weather / late afternoon",
+    "status": "Exterior only",
+    "icon": "🏛️",
+    "lat": 43.7013214,
+    "lon": 7.300155,
+    "maps": "https://www.google.com/maps/place/Fort+du+Mont+Alban/@43.7013214,7.300155,17z/data=!3m1!4b1!4m6!3m5!1s0x12cddad07e13fd51:0x2293bc7ae031d88!8m2!3d43.7013214!4d7.300155!16s%2Fg%2F121b1zwm?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.explorenicecotedazur.com/culture/le-fort-du-mont-alban/"
+  },
+  {
+    "name": "Tzarewitch — backup P+R",
+    "category": "Parking",
+    "address": "1 boulevard du Tzarewitch, 06000 Nice",
+    "description": "Backup only: you have already parked elsewhere. Free with eligible validated transit return travel; open 24/7, maximum 22 h. Rooftop parking is described, but an unshaded space and height clearance are not verified.",
+    "bestTime": "Backup only",
+    "status": "Backup",
+    "icon": "🅿️",
+    "lat": 43.7025391,
+    "lon": 7.2554478,
+    "maps": "https://www.google.com/maps/place/Parc+Auto+Tzarewitch/@43.7025391,7.2554478,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdd19f60b01af5:0xd76044a4fe318f8d!8m2!3d43.7025391!4d7.2554478!16s%2Fg%2F11kspz7sdz?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.lignesdazur.com/fr/new-18"
+  },
+  {
+    "name": "Alsace-Lorraine — tram L2/L3",
+    "category": "Transport",
+    "address": "Boulevard Victor Hugo, Nice",
+    "description": "Tram station for the Tzarewitch backup parking and the west side of central Nice. For your current car location, continue west to Sainte-Hélène instead of getting off here.",
+    "bestTime": "Return / backup connection",
+    "status": "Transport",
+    "icon": "🚋",
+    "lat": 43.6978663,
+    "lon": 7.2570457,
+    "maps": "https://www.google.com/maps/place/Alsace-Lorraine/@43.6978663,7.2525396,17z/data=!4m10!1m2!2m1!1sAlsace+Lorraine+station+Nice!3m6!1s0x12cdd00c490622b7:0xa514198442816a44!8m2!3d43.6978663!4d7.2570457!15sChxBbHNhY2UgTG9ycmFpbmUgc3RhdGlvbiBOaWNlkgEJdHJhbV9zdG9w4AEA!16s%2Fg%2F11j7j_xdcd?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Alsace-Lorraine/@43.6978663,7.2525396,17z/data=!4m10!1m2!2m1!1sAlsace+Lorraine+station+Nice!3m6!1s0x12cdd00c490622b7:0xa514198442816a44!8m2!3d43.6978663!4d7.2570457!15sChxBbHNhY2UgTG9ycmFpbmUgc3RhdGlvbiBOaWNlkgEJdHJhbV9zdG9w4AEA!16s%2Fg%2F11j7j_xdcd?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "OLD Al-Wahda address — marked closed",
+    "category": "Closed / obsolete",
+    "address": "12 rue de Suisse, 06000 Nice",
+    "description": "Google Maps marked this previous mosque address permanently closed when checked on 10 Sep 2026. Do not use it as the prayer destination. The updated mosque pin is at 4 rue de la Reine Jeanne.",
+    "bestTime": "Do not use",
+    "status": "Marked permanently closed",
+    "icon": "⚠️",
+    "lat": 43.7031489,
+    "lon": 7.264352,
+    "maps": "https://www.google.com/maps/place/Mosqu%C3%A9e+Al+Wahda+%D9%85%D8%B3%D8%AC%D8%AF%E2%80%AD/@43.7031489,7.264352,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdd0080eb5c6ab:0x9e2a7bd4f5fb0893!8m2!3d43.7031489!4d7.264352!16s%2Fg%2F11c5_h03d_?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D",
+    "source": "https://www.google.com/maps/place/Mosqu%C3%A9e+Al+Wahda+%D9%85%D8%B3%D8%AC%D8%AF%E2%80%AD/@43.7031489,7.264352,17z/data=!3m1!4b1!4m6!3m5!1s0x12cdd0080eb5c6ab:0x9e2a7bd4f5fb0893!8m2!3d43.7031489!4d7.264352!16s%2Fg%2F11c5_h03d_?entry=ttu&g_ep=EgoyMDI2MDkwNi4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "name": "Crypte archéologique — meeting point",
+    "category": "History",
+    "address": "Place Jacques Toja, 06300 Nice",
+    "lat": 43.700199,
+    "lon": 7.27845,
+    "description": "Underground remains of Nice's medieval fortifications. Guided visit in French, about 55 min. Published visits Wed/Sat/Sun at 14:00, 15:00 and 16:00; for this trip use Saturday 12 Sep, subject to reservation. Paid admission; check booking price.",
+    "bestTime": "Saturday 12 Sep / booked time",
+    "status": "Reservation required",
+    "source": "https://www.explorenicecotedazur.com/culture/la-crypte-archeologique/",
+    "icon": "🏛️",
+    "maps": "https://www.google.com/maps/search/?api=1&query=43.700199%2C7.27845"
+  },
+  {
+    "name": "Musée d'Archéologie de Nice-Cimiez",
+    "category": "History",
+    "address": "160 avenue des Arènes de Cimiez, 06100 Nice",
+    "lat": 43.719601,
+    "lon": 7.27524,
+    "description": "Roman Cemenelum site with bath remains and an indoor archaeology collection. Allow 90 min. September opening: 10:00–18:00, closed Tuesday. Do the exposed ruins in cooler weather, then the indoor section. Check current admission.",
+    "bestTime": "Morning for ruins / indoor midday",
+    "status": "Visit",
+    "source": "https://www.explorenicecotedazur.com/culture/musee-darcheologie-de-nice-cimiez/",
+    "icon": "🏛️",
+    "maps": "https://www.google.com/maps/search/?api=1&query=43.719601%2C7.27524"
+  },
+  {
+    "name": "Grotte du Lazaret",
+    "category": "History",
+    "address": "33 bis boulevard Franck Pilatte, 06300 Nice",
+    "lat": 43.691027,
+    "lon": 7.293719,
+    "description": "Prehistoric cave and interpretation area. Allow 45–60 min including the 25-min presentation. Self-guided admission free, subject to space. September published opening Wed–Sun 10:00–18:00; arrive before 17:00 to avoid the conflicting last-hour information.",
+    "bestTime": "Rain / strongest sun",
+    "status": "Optional",
+    "source": "https://www.explorenicecotedazur.com/culture/grotte-du-lazaret/",
+    "icon": "🏛️",
+    "maps": "https://www.google.com/maps/search/?api=1&query=43.691027%2C7.293719"
+  },
+  {
+    "name": "Parc Phoenix",
+    "category": "Nature",
+    "address": "405 Promenade des Anglais, 06200 Nice",
+    "lat": 43.668392,
+    "lon": 7.215109,
+    "description": "Botanical and animal park with a tropical greenhouse. Allow 90–120 min. September 09:30–19:30, ticket office closes 18:30. Paid admission. The greenhouse is sheltered but warm and humid, not a cool refuge from heat.",
+    "bestTime": "Morning / mild weather",
+    "status": "Optional",
+    "source": "https://www.explorenicecotedazur.com/culture/parc-phoenix/",
+    "icon": "🌳",
+    "maps": "https://www.google.com/maps/search/?api=1&query=43.668392%2C7.215109"
+  },
+  {
+    "name": "Port Lympia — tram L2/L3",
+    "category": "Transport",
+    "address": "Place de l'Île de Beauté, 06300 Nice",
+    "lat": 43.6983053,
+    "lon": 7.2844674,
+    "description": "Tram terminus at the north end of the harbour. For your car, take a westbound service that calls at Sainte-Hélène. Check the destination display and validate your ticket.",
+    "bestTime": "Evening return",
+    "status": "Transport",
+    "source": "https://www.lignesdazur.com/fr/plan-du-reseau",
+    "icon": "🚋",
+    "maps": "https://www.google.com/maps/search/?api=1&query=43.6983053%2C7.2844674"
+  },
+  {
+    "name": "Mosquée de la Madeleine",
+    "category": "Mosque",
+    "lat": 43.7002473,
+    "lon": 7.2381487,
+    "address": "130 boulevard de la Madeleine, 06000 Nice",
+    "description": "Useful west-of-centre option, in the Madeleine valley. Allow 30–40 min for prayer and ablutions. No admission fee. Women’s prayer room and women’s ablutions are explicitly listed by Mosquée Proche; this is published facility information, not an on-site check. Check the mosque’s current prayer board and entrance arrangements before travelling.",
+    "bestTime": "Dhuhr / Asr — current board",
+    "status": "Women’s facilities published",
+    "icon": "☪",
+    "source": "https://www.mosquee-proche.com/mosquee/mosquee-la-madeleine-nice/2141/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Mosqu%C3%A9e%20de%20la%20Madeleine%20130%20boulevard%20de%20la%20Madeleine%2C%2006000%20Nice",
+    "women": "Women’s room + ablutions listed",
+    "womenSource": "https://www.mosquee-proche.com/mosquee/mosquee-la-madeleine-nice/2141/",
+    "prayerSource": "https://mawaqit.net/fr/mosquee-la-madeleine-nice"
+  },
+  {
+    "name": "Mosquée Al-Iman / El Imane",
+    "category": "Mosque",
+    "lat": 43.671,
+    "lon": 7.2196,
+    "address": "63 rue Auguste Pégurier, 06200 Nice",
+    "description": "Useful for western Nice and Parc Phoenix. Use number 63; a separate listing exists at number 19. Allow 30–40 min for prayer and ablutions. No admission fee. Women’s prayer room and women’s ablutions are explicitly listed by Mosquée Proche; this is published facility information, not an on-site check. Check the mosque’s current prayer board and entrance arrangements before travelling.",
+    "bestTime": "Dhuhr / Asr — current board",
+    "status": "Women’s facilities published",
+    "icon": "☪",
+    "source": "https://www.mosquee-proche.com/mosquee/el-imane-nice/432/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Mosqu%C3%A9e%20Al-Iman%20/%20El%20Imane%2063%20rue%20Auguste%20P%C3%A9gurier%2C%2006200%20Nice",
+    "women": "Women’s room + ablutions listed",
+    "womenSource": "https://www.mosquee-proche.com/mosquee/el-imane-nice/432/",
+    "prayerSource": "https://mawaqit.net/fr/el-imane-nice"
+  },
+  {
+    "name": "Institut Niçois En-Nour",
+    "category": "Mosque",
+    "lat": 43.68864,
+    "lon": 7.20074,
+    "address": "279 boulevard Maurice Slama, 06200 Nice",
+    "description": "West Nice / Nice La Plaine. The institute also gives its association address as 1 avenue Emmanuel Pontremoli. Allow 30–40 min for prayer and ablutions. No admission fee. Women’s prayer room and women’s ablutions are explicitly listed by Mosquée Proche; this is published facility information, not an on-site check. Check the mosque’s current prayer board and entrance arrangements before travelling.",
+    "bestTime": "Dhuhr / Asr — current board",
+    "status": "Women’s facilities published",
+    "icon": "☪",
+    "source": "https://www.mosquee-proche.com/mosquee/ennour-nice/577/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Institut%20Ni%C3%A7ois%20En-Nour%20279%20boulevard%20Maurice%20Slama%2C%2006200%20Nice",
+    "women": "Women’s room + ablutions listed",
+    "womenSource": "https://www.mosquee-proche.com/mosquee/ennour-nice/577/",
+    "prayerSource": "https://mawaqit.net/fr/ennour-nice"
+  },
+  {
+    "name": "Mosquée Ar-Rahma",
+    "category": "Mosque",
+    "lat": 43.7402,
+    "lon": 7.3078,
+    "address": "28–30 rue du Général Saramito, 06300 Nice",
+    "description": "In L’Ariane, well outside the centre: a fallback rather than a convenient old-town prayer stop. UMAM also describes a women’s mezzanine. Allow 30–40 min for prayer and ablutions. No admission fee. Women’s prayer room and women’s ablutions are explicitly listed by Mosquée Proche; this is published facility information, not an on-site check. Check the mosque’s current prayer board and entrance arrangements before travelling.",
+    "bestTime": "Dhuhr / Asr — current board",
+    "status": "Women’s facilities published",
+    "icon": "☪",
+    "source": "https://www.mosquee-proche.com/mosquee/errahma-nice/631/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Mosqu%C3%A9e%20Ar-Rahma%2028%E2%80%9330%20rue%20du%20G%C3%A9n%C3%A9ral%20Saramito%2C%2006300%20Nice",
+    "women": "Women’s room + ablutions listed",
+    "womenSource": "https://www.mosquee-proche.com/mosquee/errahma-nice/631/",
+    "prayerSource": "https://mawaqit.net/fr/errahma-nice"
+  },
+  {
+    "name": "Parc Chambrun — Temple de l’Amour",
+    "category": "Nature",
+    "lat": 43.7222033,
+    "lon": 7.2614479,
+    "address": "Parc Chambrun, avenue George Sand, Nice",
+    "description": "Romantic garden and ornamental temple. Allow 30–45 min for a gentle stroll and a shaded break. Free park; some steps.",
+    "bestTime": "Morning / shaded rest",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://pdn-patrimonia.unicaen.fr/iejp/france/inventaires/Provence-Alpes-Cote-dAzur/Alpes-Maritimes/2FRIEJP_INVAlpes-Maritimes.xml/FRIEJP_INVAlpes-Maritimes_J168.html",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Parc%20Chambrun%20%E2%80%94%20Temple%20de%20l%E2%80%99Amour%20Parc%20Chambrun%2C%20avenue%20George%20Sand%2C%20Nice"
+  },
+  {
+    "name": "Cascade de Gairaut",
+    "category": "Nature",
+    "lat": 43.73785,
+    "lon": 7.25968,
+    "address": "Cascade de Gairaut, Nice",
+    "description": "Historic artificial waterfall and hillside views. Allow 20–40 min; a separate northern excursion. Outdoor paths can be slippery after rain. Water flow is not guaranteed.",
+    "bestTime": "Clear, cooler weather",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://mapcarta.com/fr/N324241372",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Cascade%20de%20Gairaut%20Cascade%20de%20Gairaut%2C%20Nice"
+  },
+  {
+    "name": "Parc du Vinaigrier",
+    "category": "Nature",
+    "lat": 43.7168995,
+    "lon": 7.3027647,
+    "address": "Parc du Vinaigrier, Nice",
+    "description": "Mediterranean nature reserve above the city. Allow 60–90 min for a short walk; hills add effort. Pin identifies the park, not a designated entrance. Use signed public paths.",
+    "bestTime": "Morning / dry mild weather",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://fr.wikipedia.org/wiki/Parc_naturel_d%C3%A9partemental_du_Vinaigrier",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Parc%20du%20Vinaigrier%20Parc%20du%20Vinaigrier%2C%20Nice"
+  },
+  {
+    "name": "Parc d’Estienne d’Orves",
+    "category": "Nature",
+    "lat": 43.6999,
+    "lon": 7.2445,
+    "address": "Parc d’Estienne d’Orves, Nice",
+    "description": "Wooded hillside park with olive trees and city views. Allow 45–90 min, with uphill sections. Free outdoor option near western central Nice; use the signed entrance from avenue Estienne d’Orves.",
+    "bestTime": "Cool morning / afternoon",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://mapcarta.com/fr/W257913273",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Parc%20d%E2%80%99Estienne%20d%E2%80%99Orves%20Parc%20d%E2%80%99Estienne%20d%E2%80%99Orves%2C%20Nice"
+  },
+  {
+    "name": "Jardin botanique de Nice",
+    "category": "Nature",
+    "lat": 43.68513,
+    "lon": 7.2107,
+    "address": "78 corniche Fleurie, Nice",
+    "description": "Botanical collections and views towards the Var and the sea. Allow 60–90 min. Open areas can be hot; choose a mild-weather visit and check gate hours.",
+    "bestTime": "Morning / mild weather",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://www.nice.fr/lieux/jardin-botanique/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Jardin%20botanique%20de%20Nice%2078%20corniche%20Fleurie%2C%20Nice"
+  },
+  {
+    "name": "Jardin de la Légion d’Honneur — Villa Masséna",
+    "category": "Nature",
+    "lat": 43.69508,
+    "lon": 7.25905,
+    "address": "65 rue de France, Nice",
+    "description": "Historic villa garden and memorial to the victims of 14 July 2016. Allow 20–30 min for the garden and a quiet pause. Museum entry is a separate visit.",
+    "bestTime": "Daytime / shaded pause",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://www.nice.fr/lieux/jardin-de-la-legion-dhonneur/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Jardin%20de%20la%20L%C3%A9gion%20d%E2%80%99Honneur%20%E2%80%94%20Villa%20Mass%C3%A9na%2065%20rue%20de%20France%2C%20Nice"
+  },
+  {
+    "name": "Jardin Albert Ier",
+    "category": "Nature",
+    "lat": 43.695964,
+    "lon": 7.268239,
+    "address": "Jardin Albert Ier, Nice",
+    "description": "Central garden between Place Masséna and the sea. Allow 20–30 min for a stroll or seated break; look for tree shade rather than the exposed lawns.",
+    "bestTime": "Rest between central visits",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://fr.wikipedia.org/wiki/Jardin_Albert-Ier",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Jardin%20Albert%20Ier%20Jardin%20Albert%20Ier%2C%20Nice"
+  },
+  {
+    "name": "Parc Carol de Roumanie — minigolf area",
+    "category": "Nature",
+    "lat": 43.68823,
+    "lon": 7.23059,
+    "address": "Parc Carol de Roumanie, Nice",
+    "description": "Park very near your parking neighbourhood. Allow 30–45 min for a green-space break. Pin is at the minigolf area; minigolf is a separate paid activity, with price and opening to check locally.",
+    "bestTime": "Morning / late afternoon",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://mapcarta.com/fr/N2926965077",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Parc%20Carol%20de%20Roumanie%20%E2%80%94%20minigolf%20area%20Parc%20Carol%20de%20Roumanie%2C%20Nice"
+  },
+  {
+    "name": "Parc du Castel des Deux Rois",
+    "category": "Nature",
+    "lat": 43.70023,
+    "lon": 7.2915,
+    "address": "Parc du Castel des Deux Rois, Nice",
+    "description": "Green space above the port with coastal views. Allow 30–60 min. Good for a shaded pause, though reaching it involves climbing and open sections.",
+    "bestTime": "Cooler part of day",
+    "status": "Optional",
+    "icon": "🌳",
+    "source": "https://www.nice.fr/lieux/parc-du-castel-des-deux-rois/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Parc%20du%20Castel%20des%20Deux%20Rois%20Parc%20du%20Castel%20des%20Deux%20Rois%2C%20Nice"
+  },
+  {
+    "name": "Église Sainte-Rita / Annonciation",
+    "category": "History",
+    "lat": 43.69617,
+    "lon": 7.27638,
+    "address": "1 rue de la Poissonnerie, Nice",
+    "description": "Historic church tucked into Old Nice. Allow 10–20 min when open, with quiet access around services. A short sheltered stop rather than a guaranteed rest venue.",
+    "bestTime": "During visitor opening",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/W370340919",
+    "maps": "https://www.google.com/maps/search/?api=1&query=%C3%89glise%20Sainte-Rita%20/%20Annonciation%201%20rue%20de%20la%20Poissonnerie%2C%20Nice"
+  },
+  {
+    "name": "Holy Trinity Anglican Church",
+    "category": "History",
+    "lat": 43.6972,
+    "lon": 7.26355,
+    "address": "Rue de la Buffa, Nice",
+    "description": "A reminder of Nice’s long connection with British winter visitors. Allow 10–15 min outside; interior access depends on opening and services.",
+    "bestTime": "On a central walking route",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/W142061620",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Holy%20Trinity%20Anglican%20Church%20Rue%20de%20la%20Buffa%2C%20Nice"
+  },
+  {
+    "name": "Église Notre-Dame-Auxiliatrice",
+    "category": "History",
+    "lat": 43.70922,
+    "lon": 7.28104,
+    "address": "Place Don Bosco, Nice",
+    "description": "Twentieth-century religious heritage north of the old town. Allow 15–25 min if passing nearby; visit the interior only when open outside worship.",
+    "bestTime": "Daytime / opening hours",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/W140067293",
+    "maps": "https://www.google.com/maps/search/?api=1&query=%C3%89glise%20Notre-Dame-Auxiliatrice%20Place%20Don%20Bosco%2C%20Nice"
+  },
+  {
+    "name": "Palais Lascaris — historic palace",
+    "category": "History",
+    "lat": 43.69764,
+    "lon": 7.27726,
+    "address": "15 rue Droite, Nice",
+    "description": "Seventeenth-century aristocratic palace. Optional 30–45 min indoor visit for its architecture; the collection includes musical instruments and decorative arts, so lower priority for your interests. Paid admission; check the current tariff.",
+    "bestTime": "Rain / strong sun, when open",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/32903086",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Palais%20Lascaris%20%E2%80%94%20historic%20palace%2015%20rue%20Droite%2C%20Nice"
+  },
+  {
+    "name": "Tour Saint-François — exterior",
+    "category": "History",
+    "lat": 43.69947,
+    "lon": 7.27852,
+    "address": "Tour Saint-François, Nice",
+    "description": "Historic bell tower turned clock tower. Allow 10–15 min outside. Tourism listings report temporary closure: do not count on climbing it without confirming reopening.",
+    "bestTime": "During an old-town walk",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://www.nice.fr/lieux/la-tour-saint-francois/",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Tour%20Saint-Fran%C3%A7ois%20%E2%80%94%20exterior%20Tour%20Saint-Fran%C3%A7ois%2C%20Nice"
+  },
+  {
+    "name": "Basilique Notre-Dame",
+    "category": "History",
+    "lat": 43.70325,
+    "lon": 7.26572,
+    "address": "Avenue Jean Médecin, Nice",
+    "description": "Large basilica in the modern centre. Allow 15–25 min; an indoor heritage stop when open, with visits subject to religious services.",
+    "bestTime": "Opening hours / central route",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/24994906",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Basilique%20Notre-Dame%20Avenue%20Jean%20M%C3%A9decin%2C%20Nice"
+  },
+  {
+    "name": "Monument aux morts — Rauba Capeù",
+    "category": "History",
+    "lat": 43.69372,
+    "lon": 7.28111,
+    "address": "Quai Rauba Capeù, Nice",
+    "description": "Large memorial set into the rock between the old town and port. Allow 10–15 min outdoors. Exposed to weather; combine with a seafront stroll.",
+    "bestTime": "Late afternoon",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/38660422",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Monument%20aux%20morts%20%E2%80%94%20Rauba%20Cape%C3%B9%20Quai%20Rauba%20Cape%C3%B9%2C%20Nice"
+  },
+  {
+    "name": "Église du Gesù — Saint-Jacques-le-Majeur",
+    "category": "History",
+    "lat": 43.69675,
+    "lon": 7.27737,
+    "address": "Place du Jésus, Nice",
+    "description": "Baroque church on a small old-town square. Allow 10–20 min; visit quietly if open, otherwise enjoy the historic setting outside.",
+    "bestTime": "Old-town walk / opening hours",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/W137226051",
+    "maps": "https://www.google.com/maps/search/?api=1&query=%C3%89glise%20du%20Ges%C3%B9%20%E2%80%94%20Saint-Jacques-le-Majeur%20Place%20du%20J%C3%A9sus%2C%20Nice"
+  },
+  {
+    "name": "Église Saint-Martin-Saint-Augustin",
+    "category": "History",
+    "lat": 43.69962,
+    "lon": 7.27958,
+    "address": "Place Saint-Augustin, Nice",
+    "description": "Historic church near Place Garibaldi and the old-town lanes. Allow 10–20 min if open; easy to combine with the crypt area.",
+    "bestTime": "Daytime / opening hours",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/W137240736",
+    "maps": "https://www.google.com/maps/search/?api=1&query=%C3%89glise%20Saint-Martin-Saint-Augustin%20Place%20Saint-Augustin%2C%20Nice"
+  },
+  {
+    "name": "Église Notre-Dame-du-Port",
+    "category": "History",
+    "lat": 43.69892,
+    "lon": 7.28519,
+    "address": "Place Île de Beauté, Nice",
+    "description": "Nineteenth-century church overlooking the harbour. Allow 10–20 min; the square also gives a useful view down the port.",
+    "bestTime": "Before the tram / port stroll",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://mapcarta.com/fr/W137192234",
+    "maps": "https://www.google.com/maps/search/?api=1&query=%C3%89glise%20Notre-Dame-du-Port%20Place%20%C3%8Ele%20de%20Beaut%C3%A9%2C%20Nice"
+  },
+  {
+    "name": "Gare du Sud — historic station façade",
+    "category": "History",
+    "lat": 43.709444,
+    "lon": 7.262222,
+    "address": "Place du Général de Gaulle, Nice",
+    "description": "Former railway terminus dating from 1892. Allow 15–25 min for the façade and neighbourhood. A convenient extra stop around Libération; interior uses and opening may change.",
+    "bestTime": "Morning / daytime",
+    "status": "Optional",
+    "icon": "🏛️",
+    "source": "https://fr.wikipedia.org/wiki/Gare_du_Sud",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Gare%20du%20Sud%20%E2%80%94%20historic%20station%20fa%C3%A7ade%20Place%20du%20G%C3%A9n%C3%A9ral%20de%20Gaulle%2C%20Nice"
+  },
+  {
+    "name": "Nice-Ville railway station",
+    "category": "Transport",
+    "lat": 43.705005,
+    "lon": 7.261929,
+    "address": "Avenue Thiers, Nice",
+    "description": "Main railway station for regional onward trips. Train tickets are separate from ordinary city tram travel. Check current departures; allow time to find your platform.",
+    "bestTime": "For onward journeys",
+    "status": "Optional",
+    "icon": "🚋",
+    "source": "https://fr.wikipedia.org/wiki/Gare_de_Nice-Ville",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Nice-Ville%20railway%20station%20Avenue%20Thiers%2C%20Nice"
+  },
+  {
+    "name": "Nice CP — Chemins de fer de Provence",
+    "category": "Transport",
+    "lat": 43.708874,
+    "lon": 7.259623,
+    "address": "Gare Nice CP, Nice",
+    "description": "Separate station for the inland Chemins de fer de Provence line. An option for a longer nature excursion on another day; use the operator’s current timetable and fares.",
+    "bestTime": "For a planned inland excursion",
+    "status": "Optional",
+    "icon": "🚋",
+    "source": "https://fr.wikipedia.org/wiki/Gare_de_Nice_CP",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Nice%20CP%20%E2%80%94%20Chemins%20de%20fer%20de%20Provence%20Gare%20Nice%20CP%2C%20Nice"
+  },
+  {
+    "name": "Promenade des Anglais — central seafront",
+    "category": "Sunset",
+    "lat": 43.6949,
+    "lon": 7.2663,
+    "address": "Promenade des Anglais, Nice",
+    "description": "Flat seafront walk with bay views. Allow 30–60 min, turning back whenever you like to control distance. Very exposed in strong sun; best near sunset.",
+    "bestTime": "Late afternoon / sunset",
+    "status": "Optional",
+    "icon": "🌅",
+    "source": "https://ignrando.fr/fr/pointsinteret/fiche/details/id/197487",
+    "maps": "https://www.google.com/maps/search/?api=1&query=Promenade%20des%20Anglais%20%E2%80%94%20central%20seafront%20Promenade%20des%20Anglais%2C%20Nice"
+  }
+];
+const colours={Parking:'#1565c0',Transport:'#00838f',Mosque:'#7041a2',History:'#c46b13',Nature:'#2e7d32',Sunset:'#c44343','Mosque — women unconfirmed':'#777','Closed / obsolete':'#6e7475'};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const fold=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const chooser=$('category');
+Object.keys(colours).filter(c=>c!=='Mosque').forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;chooser.append(o)});
+const say=s=>{$('status').textContent=s;$('status').classList.toggle('visible',Boolean(s))};
+let map,layer,watchId=null,tracking=false,gpsPoint=null,gpsCircle=null,lastPosition=null,firstFix=true,session=0;
+const markers=[];
+function popup(p){return '<div class="popup"><h2>'+esc(p.name)+'</h2>'+(p.women?'<p class="facility">♀ '+esc(p.women)+'</p>':'')+'<p>'+esc(p.description)+'</p><p><strong>Best time:</strong> '+esc(p.bestTime)+'</p><p>'+esc(p.address)+'</p><a href="'+esc(p.maps)+'" target="_blank" rel="noopener">Open in Google Maps ↗</a>'+(p.womenSource?'<a href="'+esc(p.womenSource)+'" target="_blank" rel="noopener">Women’s facilities — source ↗</a>':'')+(p.prayerSource?'<a href="'+esc(p.prayerSource)+'" target="_blank" rel="noopener">Current mosque prayer board ↗</a>':'')+'<a href="'+esc(p.source)+'" target="_blank" rel="noopener">Place information / source ↗</a></div>'}
+if(typeof L!=='undefined'){
+ $('error').remove();
+ map=L.map('map',{scrollWheelZoom:true,touchZoom:true,zoomControl:true}).setView([43.700,7.263],13);
+ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+ layer=L.layerGroup().addTo(map);
+ points.forEach(p=>{
+  const mosque=p.category==='Mosque',size=mosque?40:34;
+  const art=mosque?'<img class="mosque-img" alt="" src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/mosque.svg" onerror="this.hidden=true"><span class="mosque-fallback">☪</span><span class="women-badge">♀</span>':esc(p.icon);
+  const icon=L.divIcon({className:'',html:'<div class="pin '+(mosque?'mosque':'')+'" style="background:'+colours[p.category]+'">'+art+'</div>',iconSize:[size,size],iconAnchor:[size/2,size/2]});
+  markers.push(L.marker([p.lat,p.lon],{icon,title:p.name+(mosque?' — women’s room listed':''),zIndexOffset:mosque?500:0}).bindPopup(popup(p),{maxWidth:310}));
+ });
+}else{$('error').textContent='Map could not load. Open Places to use the Google Maps links.';$('locate').disabled=true}
+function draw(fit=true){
+ const category=chooser.value,query=fold($('search').value);
+ const indexes=points.map((p,i)=>i).filter(i=>{const p=points[i];return(category==='all'||(category==='active'?p.status!=='Backup'&&!['Closed / obsolete','Mosque — women unconfirmed'].includes(p.category):p.category===category))&&fold(p.name+' '+p.address+' '+p.description).includes(query)});
+ const list=$('list');list.replaceChildren();if(layer)layer.clearLayers();
+ indexes.forEach(i=>{const p=points[i];if(layer)markers[i].addTo(layer);const b=document.createElement('button');b.type='button';b.className='place';b.innerHTML='<strong>'+esc((p.category==='Mosque'?'☪ ♀':p.icon)+' '+p.name)+'</strong><span>'+esc(p.category+' · '+p.bestTime)+'</span>';b.onclick=()=>{if(map){map.setView([p.lat,p.lon],17);markers[i].openPopup();window.scrollTo({top:0,behavior:'smooth'})}else window.open(p.maps,'_blank','noopener')};list.append(b)});
+ $('count').textContent=indexes.length+' of '+points.length+' places shown';
+ if(map&&fit&&indexes.length)map.fitBounds(indexes.map(i=>[points[i].lat,points[i].lon]),{padding:[45,45],maxZoom:15});
+}
+chooser.addEventListener('change',()=>draw());$('search').addEventListener('input',()=>draw(false));draw();
+function stopGPS(message='Location stopped.'){tracking=false;session++;if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}if(gpsPoint){map.removeLayer(gpsPoint);gpsPoint=null}if(gpsCircle){map.removeLayer(gpsCircle);gpsCircle=null}lastPosition=null;$('recenter').hidden=true;$('locate').textContent='◎ My location';$('locate').setAttribute('aria-pressed','false');say(message)}
+function locate(){
+ if(tracking){stopGPS();return}
+ if(!map)return;
+ if(!navigator.geolocation){say('Location is unavailable in this viewer. Open the map in a full browser with location access.');return}
+ if(!window.isSecureContext){say('This viewer blocks GPS. Open the map from an HTTPS page in Chrome or Safari, then allow location.');return}
+ tracking=true;firstFix=true;const token=++session;
+ $('locate').textContent='Stop GPS ■';$('locate').setAttribute('aria-pressed','true');say('Finding your location… Allow location when your browser asks.');
+ try{watchId=navigator.geolocation.watchPosition(position=>{
+  if(!tracking||token!==session)return;
+  const {latitude,longitude,accuracy}=position.coords;lastPosition=[latitude,longitude];
+  if(!gpsPoint){gpsCircle=L.circle(lastPosition,{radius:accuracy,color:'#168af2',weight:1,fillOpacity:.1,interactive:false}).addTo(map);gpsPoint=L.marker(lastPosition,{icon:L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:2000,title:'Your current location'}).addTo(map)}else{gpsPoint.setLatLng(lastPosition);gpsCircle.setLatLng(lastPosition).setRadius(accuracy)}
+  gpsPoint.bindPopup('Your current location · accuracy about '+Math.round(accuracy)+' m');$('recenter').hidden=false;
+  if(firstFix){map.setView(lastPosition,accuracy<150?16:14);firstFix=false}
+  say('Location active · accuracy ±'+Math.round(accuracy)+' m. Use Recenter after exploring.');
+ },error=>{if(token!==session)return;const messages={1:'Location was denied or blocked by this viewer. Allow location in browser settings; downloaded-file viewers may require an HTTPS copy of this map.',2:'Your device could not determine its location. Turn on location services and try again.',3:'Location timed out. Try again with a clearer view of the sky.'};stopGPS(messages[error.code]||'Location unavailable. Please try again.');},{enableHighAccuracy:true,maximumAge:10000,timeout:20000})}catch{stopGPS('This browser could not start location. Check location permission and open from a secure page.')}
+}
+$('locate').onclick=locate;$('recenter').onclick=()=>{if(lastPosition)map.setView(lastPosition,16)};
+window.addEventListener('pagehide',()=>{if(tracking)stopGPS('')});
+</script></body></html>
